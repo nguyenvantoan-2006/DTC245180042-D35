@@ -1,0 +1,36 @@
+# ==============================================================================
+# CẤU HÌNH PROMTAIL 2.9.4 (LOG SHIPPER CHO DOCKER CONTAINER)
+# Tự động phát hiện container qua Docker daemon và gắn nhãn 'container' cho LogQL
+# ==============================================================================
+
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    batchwait: 1s
+    batchsize: 102400
+
+scrape_configs:
+  # 1. Tự động thu thập log của toàn bộ Docker Container trong hệ thống
+  - job_name: docker-containers
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+        refresh_interval: 5s
+    relabel_configs:
+      # Lấy tên container và bỏ dấu gạch chéo '/' phía trước (ví dụ /quiz-app -> quiz-app)
+      - source_labels: ['__meta_docker_container_name']
+        regex: '/(.*)'
+        target_label: 'container'
+
+      # Gắn nhãn job phục vụ tìm kiếm
+      - source_labels: ['container']
+        target_label: 'job'
+
+      # Gắn nhãn image
+      - source_labels: ['__meta_docker_container_image']
+        target_label: 'image'

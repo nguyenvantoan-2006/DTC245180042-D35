@@ -272,6 +272,47 @@ services:
     depends_on:
       - prometheus
 
+  # ============================================================================
+  # HỆ THỐNG QUẢN TRỊ LOG TẬP TRUNG (LOGGING STACK) - TIÊU CHÍ 5
+  # ============================================================================
+
+  # 11. Loki: Trung tâm lưu trữ và đánh chỉ mục Log (Loki 2.9.4 Schema v12)
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: quiz-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki_data:/loki
+    ports:
+      - "127.0.0.1:3100:3100" # Chỉ mở localhost để kiểm tra kết nối API
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+
+  # 12. Promtail: Thu thập log từ Docker Daemon và chuyển về Loki
+  promtail:
+    image: grafana/promtail:2.9.4
+    container_name: quiz-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    networks:
+      - monitoring
+    depends_on:
+      - loki
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
 # ==============================================================================
 # ĐỊNH NGHĨA MẠNG VÀ PHÂN VÙNG CÁCH LY (NETWORK ISOLATION)
 # ==============================================================================
@@ -293,3 +334,6 @@ volumes:
     driver: local
   grafana_data:
     driver: local
+  loki_data:
+    driver: local
+
