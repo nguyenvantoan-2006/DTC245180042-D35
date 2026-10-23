@@ -1,0 +1,53 @@
+# ==============================================================================
+# CẤU HÌNH PROMETHEUS (ĐỀ 35 - HỆ THỐNG QUIZ)
+# Thu thập metrics từ App, Node Exporter, cAdvisor, MySQL Exporter, Nginx Exporter
+# ==============================================================================
+
+global:
+  scrape_interval: 10s       # Chu kỳ lấy mẫu metrics (10 giây/lần)
+  evaluation_interval: 10s   # Chu kỳ đánh giá rule cảnh báo
+
+scrape_configs:
+  # 1. Giám sát chính bản thân Prometheus
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # 2. Giám sát Ứng dụng Web Quiz (Custom Metrics: Đăng nhập, Nộp bài, Điểm số)
+  - job_name: 'quiz-app'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['app:3000']
+        labels:
+          application: 'quiz-system'
+          tier: 'application'
+
+  # 3. Giám sát tài nguyên máy chủ Host / Hệ điều hành (CPU, RAM, Disk, Network)
+  - job_name: 'node-exporter'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          role: 'host-metrics'
+
+  # 4. Giám sát chi tiết từng Docker Container (cAdvisor)
+  - job_name: 'cadvisor'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          role: 'container-metrics'
+
+  # 5. Giám sát Cơ sở dữ liệu MySQL 8.0 (Connections, Queries, Innodb buffer)
+  - job_name: 'mysql'
+    static_configs:
+      - targets: ['mysqld-exporter:9104']
+        labels:
+          database: 'mysql-quiz-db'
+          tier: 'database'
+
+  # 6. Giám sát Reverse Proxy Nginx (Active connections, Requests/s, Status codes)
+  - job_name: 'nginx'
+    static_configs:
+      - targets: ['nginx-exporter:9113']
+        labels:
+          service: 'nginx-reverse-proxy'
+          tier: 'gateway'

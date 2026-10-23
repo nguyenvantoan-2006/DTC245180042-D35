@@ -1,6 +1,7 @@
 # ==============================================================================
-# DOCKER COMPOSE CHO HỆ THỐNG QUIZ (ĐỀ 35 - GIAI ĐOẠN 1)
+# DOCKER COMPOSE CHO HỆ THỐNG QUIZ (ĐỀ 35)
 # Áp dụng Hardening: Pin version, Non-root, Network Isolation, Least Privilege
+# Tích hợp đầy đủ: App + MySQL + phpMyAdmin + Nginx + Prometheus + Grafana
 # ==============================================================================
 
 version: '3.8'
@@ -66,7 +67,8 @@ services:
       SEED_STUDENT_PASSWORD: ${SEED_STUDENT_PASSWORD}
     networks:
       - backend
-    # HARDENING CONTAINER:
+      - monitoring
+    # HARDENING CONTAINER APP:
     read_only: true
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=64m
@@ -103,7 +105,7 @@ services:
       PMA_ABSOLUTE_URI: https://localhost/pma/
       UPLOAD_LIMIT: 64M
     ports:
-      - "127.0.0.1:8081:80" # Chỉ cho phép truy cập từ localhost theo đúng Hardening
+      - "127.0.0.1:8081:80" # Chỉ truy cập từ localhost theo đúng Hardening
     networks:
       - backend
       - frontend
@@ -143,6 +145,133 @@ services:
       app:
         condition: service_healthy
 
+  # ============================================================================
+  # HỆ THỐNG GIÁM SÁT (MONITORING STACK) - TIÊU CHÍ 4
+  # ============================================================================
+
+  # 5. Node Exporter: Giám sát tài nguyên máy chủ host (CPU, RAM, Disk, IO)
+  node-exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: quiz-node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+
+  # 6. cAdvisor: Giám sát mức sử dụng tài nguyên của từng Docker Container
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: quiz-cadvisor
+    restart: unless-stopped
+    privileged: true
+    devices:
+      - /dev/kmsg:/dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+
+  # 7. MySQL Exporter: Thu thập metrics chuyên sâu từ MySQL 8.0
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.14.0
+    container_name: quiz-mysqld-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "${EXPORTER_USER}:${EXPORTER_PASSWORD}@(db:3306)/"
+    networks:
+      - backend
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # 8. Nginx Exporter: Thu thập trạng thái kết nối và request của Nginx
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.1.0
+    container_name: quiz-nginx-exporter
+    restart: unless-stopped
+    command:
+      - -nginx.scrape-uri=http://nginx:8080/stub_status
+    networks:
+      - backend
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    depends_on:
+      - nginx
+
+  # 9. Prometheus: Trung tâm thu thập, lưu trữ Time-Series Metrics
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: quiz-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:9090:9090" # Chỉ mở localhost để bảo mật
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+
+  # 10. Grafana: Trực quan hóa Metrics thành 3 Dashboard (Container, Web, DB)
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: quiz-grafana
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-GrafanaAdminPassword_2026!}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards/json:ro
+    ports:
+      - "127.0.0.1:3001:3000" # Mở cổng 3001 ra host cho người dùng truy cập Grafana
+    networks:
+      - monitoring
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+    depends_on:
+      - prometheus
+
 # ==============================================================================
 # ĐỊNH NGHĨA MẠNG VÀ PHÂN VÙNG CÁCH LY (NETWORK ISOLATION)
 # ==============================================================================
@@ -150,11 +279,17 @@ networks:
   frontend:
     driver: bridge
   backend:
-    internal: true # Mạng nội bộ không truy cập trực tiếp ra bên ngoài
+    internal: true # Mạng nội bộ cách ly hoàn toàn cơ sở dữ liệu
+  monitoring:
+    driver: bridge # Mạng riêng biệt cho các công cụ giám sát và thu thập log
 
 # ==============================================================================
 # LƯU TRỮ DỮ LIỆU DÙNG CHUNG (PERSISTENT VOLUMES)
 # ==============================================================================
 volumes:
   db_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
     driver: local
