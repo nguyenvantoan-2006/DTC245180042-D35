@@ -27,3 +27,10 @@ Thumbs.db
 .vscode/
 *.log
 
+# Tài liệu và Báo cáo cá nhân (Không đưa lên GitHub theo yêu cầu)
+docs/
+docx/
+*.docx
+*.doc
+
+
