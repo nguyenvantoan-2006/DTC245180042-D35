@@ -1,0 +1,160 @@
+# ==============================================================================
+# DOCKER COMPOSE CHO HỆ THỐNG QUIZ (ĐỀ 35 - GIAI ĐOẠN 1)
+# Áp dụng Hardening: Pin version, Non-root, Network Isolation, Least Privilege
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  # ----------------------------------------------------------------------------
+  # 1. Cơ sở dữ liệu MySQL 8.0 (Internal Network, không publish port ra host)
+  # ----------------------------------------------------------------------------
+  db:
+    image: mysql:8.0.36
+    container_name: quiz-db
+    restart: unless-stopped
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      EXPORTER_USER: ${EXPORTER_USER}
+      EXPORTER_PASSWORD: ${EXPORTER_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./db/init.sh:/docker-entrypoint-initdb.d/init.sh:ro
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ----------------------------------------------------------------------------
+  # 2. Ứng dụng Quiz App (Node.js 20 Express)
+  # ----------------------------------------------------------------------------
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    image: quiz-app:1.0.0
+    container_name: quiz-app
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV}
+      PORT: ${PORT}
+      SESSION_SECRET: ${SESSION_SECRET}
+      DB_HOST: db
+      DB_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_TEACHER_PASSWORD: ${SEED_TEACHER_PASSWORD}
+      SEED_STUDENT_PASSWORD: ${SEED_STUDENT_PASSWORD}
+    networks:
+      - backend
+    # HARDENING CONTAINER:
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    user: "1000:1000"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  # ----------------------------------------------------------------------------
+  # 3. Quản trị Cơ sở dữ liệu: phpMyAdmin (Cổng 127.0.0.1:8081 & qua Nginx /pma/)
+  # ----------------------------------------------------------------------------
+  phpmyadmin:
+    image: phpmyadmin:5.2.1-apache
+    container_name: quiz-pma
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ABSOLUTE_URI: https://localhost/pma/
+      UPLOAD_LIMIT: 64M
+    ports:
+      - "127.0.0.1:8081:80" # Chỉ cho phép truy cập từ localhost theo đúng Hardening
+    networks:
+      - backend
+      - frontend
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ----------------------------------------------------------------------------
+  # 4. Reverse Proxy Nginx (HTTPS, TLS 1.2/1.3, Rate Limit, Security Headers)
+  # ----------------------------------------------------------------------------
+  nginx:
+    image: nginx:1.25.4-alpine
+    container_name: quiz-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
+    networks:
+      - frontend
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+    depends_on:
+      app:
+        condition: service_healthy
+
+# ==============================================================================
+# ĐỊNH NGHĨA MẠNG VÀ PHÂN VÙNG CÁCH LY (NETWORK ISOLATION)
+# ==============================================================================
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    internal: true # Mạng nội bộ không truy cập trực tiếp ra bên ngoài
+
+# ==============================================================================
+# LƯU TRỮ DỮ LIỆU DÙNG CHUNG (PERSISTENT VOLUMES)
+# ==============================================================================
+volumes:
+  db_data:
+    driver: local

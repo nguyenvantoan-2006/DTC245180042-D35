@@ -1,0 +1,75 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">🕒 Lịch sử bài thi của bạn</h1>
+    <p class="page-subtitle">Theo dõi tiến độ, kết quả và đối soát các lần làm bài trắc nghiệm</p>
+  </div>
+  <a href="/quizzes" class="btn btn-primary">+ Làm bài thi mới</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title" style="font-size: 1.15rem;">Danh sách các lần nộp bài</h2>
+    <span class="user-badge" style="background: var(--primary-light); color: var(--primary); font-weight: 700;">
+      <%= history.length %> lượt nộp bài
+    </span>
+  </div>
+
+  <% if (history.length === 0) { %>
+    <div style="text-align: center; padding: 3rem 1rem;">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">📄</div>
+      <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem;">Chưa có lịch sử làm bài nào</h3>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">
+        Bạn chưa hoàn thành bài thi nào trong hệ thống. Hãy chọn một đề thi và thử sức ngay!
+      </p>
+      <a href="/quizzes" class="btn btn-primary">Bắt đầu làm bài ngay</a>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">#</th>
+            <th>Tên đề thi</th>
+            <th>Điểm số</th>
+            <th>Số câu</th>
+            <th>Thời gian nộp</th>
+            <th style="text-align: right;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% history.forEach((item, index) => { %>
+            <tr>
+              <td><strong>#<%= item.id %></strong></td>
+              <td>
+                <strong style="color: var(--text-main);"><%= item.quiz_title %></strong>
+              </td>
+              <td>
+                <span class="score-badge <%= item.score >= 8.5 ? 'excellent' : (item.score >= 7.0 ? 'good' : (item.score >= 5.0 ? 'average' : 'bad')) %>">
+                  <%= item.score %> / 10
+                </span>
+              </td>
+              <td>
+                <span style="font-weight: 600; color: var(--text-secondary);"><%= item.total %> câu</span>
+              </td>
+              <td style="color: var(--text-muted); font-size: 0.9rem;">
+                <%= new Date(item.submitted_at).toLocaleString('vi-VN') %>
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <a href="/quizzes/attempts/<%= item.id %>/review" class="btn btn-primary btn-sm" style="margin-right: 0.35rem;">
+                  🔍 Xem chi tiết
+                </a>
+                <a href="/quizzes/<%= item.quiz_id %>" class="btn btn-outline btn-sm">
+                  🔄 Thi lại
+                </a>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

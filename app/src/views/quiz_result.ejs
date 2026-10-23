@@ -1,0 +1,76 @@
+<%- include('partials/header') %>
+
+<div class="result-card">
+  <div style="display: inline-block; padding: 0.35rem 1rem; border-radius: var(--radius-full); background: var(--primary-light); color: var(--primary); font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem;">
+    Kết Quả Bài Thi Trắc Nghiệm
+  </div>
+
+  <h2 class="card-title" style="font-size: 1.6rem; margin-bottom: 0.25rem;">
+    <%= attempt.quiz_title %>
+  </h2>
+  <p style="color: var(--text-muted); font-size: 0.95rem;">
+    Thí sinh: <strong><%= user.username %></strong> | Mã lượt làm bài: <strong>#<%= attempt.id %></strong>
+  </p>
+
+  <div class="score-circle-wrapper <%= attempt.score >= 5.0 ? 'pass' : 'fail' %>">
+    <div class="score-big"><%= attempt.score %></div>
+    <div class="score-sub">Thang điểm 10</div>
+  </div>
+
+  <div style="margin-bottom: 2rem;">
+    <% if (attempt.score >= 8.5) { %>
+      <div style="font-size: 1.25rem; font-weight: 800; color: #15803d; margin-bottom: 0.25rem;">
+        🎉 XUẤT SẮC!
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Bạn đã nắm vững toàn bộ kiến thức của bài kiểm tra này.</p>
+    <% } else if (attempt.score >= 7.0) { %>
+      <div style="font-size: 1.25rem; font-weight: 800; color: #0284c7; margin-bottom: 0.25rem;">
+        👍 KẾT QUẢ TỐT!
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Bạn đã hoàn thành rất tốt, chỉ sai một số ít câu hỏi.</p>
+    <% } else if (attempt.score >= 5.0) { %>
+      <div style="font-size: 1.25rem; font-weight: 800; color: #d97706; margin-bottom: 0.25rem;">
+        👌 ĐẠT YÊU CẦU!
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Bạn đã vượt qua bài thi. Hãy ôn lại những câu còn chưa nắm vững.</p>
+    <% } else { %>
+      <div style="font-size: 1.25rem; font-weight: 800; color: #dc2626; margin-bottom: 0.25rem;">
+        ⚠️ CHƯA ĐẠT YÊU CẦU!
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.95rem;">Điểm dưới 5.0. Hãy xem lại chi tiết bài làm để ôn tập và thi lại!</p>
+    <% } %>
+  </div>
+
+  <div style="background: #f8fafc; border-radius: var(--radius); padding: 1.25rem 1.75rem; margin-bottom: 2rem; border: 1px solid var(--border); text-align: left; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+    <div>
+      <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">TỔNG SỐ CÂU HỎI</div>
+      <div style="font-size: 1.25rem; font-weight: 800; color: var(--text-main);"><%= attempt.total %> câu</div>
+    </div>
+    <div>
+      <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">SỐ CÂU TRẢ LỜI ĐÚNG</div>
+      <div style="font-size: 1.25rem; font-weight: 800; color: var(--success);">
+        <%= Math.round((attempt.score / 10) * attempt.total) %> / <%= attempt.total %> câu
+      </div>
+    </div>
+    <div style="grid-column: span 2; border-top: 1px solid var(--border); padding-top: 0.75rem;">
+      <div style="color: var(--text-muted); font-size: 0.85rem; font-weight: 600;">THỜI GIAN NỘP BÀI</div>
+      <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-secondary);">
+        <%= new Date(attempt.submitted_at).toLocaleString('vi-VN') %>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+    <a href="/quizzes/attempts/<%= attempt.id %>/review" class="btn btn-primary" style="padding: 0.75rem 1.5rem;">
+      🔍 Xem chi tiết đáp án bài làm
+    </a>
+    <a href="/quizzes/<%= attempt.quiz_id %>" class="btn btn-outline" style="padding: 0.75rem 1.5rem;">
+      🔄 Làm lại bài thi
+    </a>
+    <a href="/history" class="btn btn-outline" style="padding: 0.75rem 1.5rem;">
+      🕒 Lịch sử cá nhân
+    </a>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

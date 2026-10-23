@@ -1,0 +1,83 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">📚 Quản lý Đề thi trắc nghiệm</h1>
+    <p class="page-subtitle">Soạn thảo đề thi, cấu hình thời lượng làm bài và quản lý ngân hàng câu hỏi</p>
+  </div>
+  <a href="/admin/quizzes/new" class="btn btn-primary">+ Tạo đề thi mới</a>
+</div>
+
+<% if (typeof success !== 'undefined' && success) { %>
+  <div class="alert alert-success">✔ <%= success %></div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-danger">❌ <%= error %></div>
+<% } %>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title" style="font-size: 1.15rem;">Danh sách các đề thi (<%= quizzes.length %> đề)</h2>
+  </div>
+
+  <% if (quizzes.length === 0) { %>
+    <div style="text-align: center; padding: 3rem 1rem;">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">📁</div>
+      <h3 style="font-size: 1.25rem; font-weight: 700;">Chưa có đề thi nào</h3>
+      <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Hãy tạo đề thi đầu tiên và bắt đầu thêm các câu hỏi trắc nghiệm.</p>
+      <a href="/admin/quizzes/new" class="btn btn-primary">+ Tạo đề thi mới ngay</a>
+    </div>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">ID</th>
+            <th>Tiêu đề đề thi</th>
+            <th>Thời lượng</th>
+            <th>Số câu hỏi</th>
+            <th>Ngày tạo</th>
+            <th style="text-align: right;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% quizzes.forEach(quiz => { %>
+            <tr>
+              <td><strong>#<%= quiz.id %></strong></td>
+              <td>
+                <strong style="color: var(--text-main); font-size: 1.05rem;"><%= quiz.title %></strong>
+              </td>
+              <td>
+                <span style="font-weight: 600; color: var(--text-secondary);">⏱ <%= quiz.duration_min %> phút</span>
+              </td>
+              <td>
+                <span class="user-badge" style="background: var(--primary-light); color: var(--primary); font-weight: 700;">
+                  <%= quiz.question_count %> câu hỏi
+                </span>
+              </td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">
+                <%= new Date(quiz.created_at).toLocaleDateString('vi-VN') %>
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <a href="/admin/quizzes/<%= quiz.id %>/questions" class="btn btn-primary btn-sm" style="margin-right: 0.35rem;">
+                  ⚙️ Quản lý câu hỏi (<%= quiz.question_count %>)
+                </a>
+                <a href="/admin/quizzes/<%= quiz.id %>/edit" class="btn btn-outline btn-sm" style="margin-right: 0.35rem;">
+                  ✏️ Sửa
+                </a>
+                <form action="/admin/quizzes/<%= quiz.id %>/delete" method="POST" style="display: inline-block;">
+                  <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa đề thi này? Toàn bộ câu hỏi và kết quả thi liên quan sẽ bị xóa vĩnh viễn!');">
+                    🗑 Xóa
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,151 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">📊 Bảng điều khiển Quản trị</h1>
+    <p class="page-subtitle">Tổng quan số liệu thống kê thời gian thực và giám sát hoạt động hệ thống</p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="/admin/quizzes/new" class="btn btn-primary">+ Soạn đề thi mới</a>
+    <a href="/admin/attempts" class="btn btn-outline">📝 Xem tất cả bài nộp</a>
+  </div>
+</div>
+
+<!-- Lưới thẻ thống kê số liệu tổng quan -->
+<div class="stat-grid">
+  <div class="stat-card">
+    <div class="stat-icon indigo">📚</div>
+    <div class="stat-info">
+      <div class="stat-number"><%= stats.totalQuizzes %></div>
+      <div class="stat-label">Tổng số đề thi</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon blue">❓</div>
+    <div class="stat-info">
+      <div class="stat-number"><%= stats.totalQuestions %></div>
+      <div class="stat-label">Tổng số câu hỏi</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon purple">👥</div>
+    <div class="stat-info">
+      <div class="stat-number"><%= stats.totalUsers %></div>
+      <div class="stat-label">Người dùng hệ thống</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon amber">📝</div>
+    <div class="stat-info">
+      <div class="stat-number"><%= stats.totalAttempts %></div>
+      <div class="stat-label">Lượt thi đã nộp</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon green">🎯</div>
+    <div class="stat-info">
+      <div class="stat-number"><%= stats.avgScore %> / 10</div>
+      <div class="stat-label">Điểm trung bình</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon blue">🏆</div>
+    <div class="stat-info">
+      <div class="stat-number"><%= stats.passRate %>%</div>
+      <div class="stat-label">Tỷ lệ đạt (≥ 5.0)</div>
+    </div>
+  </div>
+</div>
+
+<div style="display: grid; grid-template-columns: 3fr 2fr; gap: 1.5rem; margin-bottom: 2rem;">
+  <!-- Cột trái: Các lượt nộp bài mới nhất -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h2 class="card-title" style="font-size: 1.15rem;">📝 Lượt nộp bài gần đây</h2>
+      <a href="/admin/attempts" class="btn btn-outline btn-sm">Xem tất cả ➔</a>
+    </div>
+
+    <% if (recentAttempts.length === 0) { %>
+      <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Chưa có lượt thi nào được ghi nhận.</p>
+    <% } else { %>
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Thí sinh</th>
+              <th>Đề thi</th>
+              <th>Điểm số</th>
+              <th>Thời gian</th>
+              <th>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% recentAttempts.forEach(att => { %>
+              <tr>
+                <td>
+                  <strong><%= att.username %></strong>
+                </td>
+                <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  <%= att.quiz_title %>
+                </td>
+                <td>
+                  <span class="score-badge <%= att.score >= 8.5 ? 'excellent' : (att.score >= 7.0 ? 'good' : (att.score >= 5.0 ? 'average' : 'bad')) %>">
+                    <%= att.score %>
+                  </span>
+                </td>
+                <td style="font-size: 0.85rem; color: var(--text-muted);">
+                  <%= new Date(att.submitted_at).toLocaleTimeString('vi-VN') %>
+                </td>
+                <td>
+                  <a href="/quizzes/attempts/<%= att.id %>/review" class="btn btn-outline btn-sm">
+                    Chi tiết
+                  </a>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Cột phải: Nhật ký hoạt động gần đây -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h2 class="card-title" style="font-size: 1.15rem;">📋 Nhật ký hoạt động</h2>
+      <a href="/admin/activity" class="btn btn-outline btn-sm">Toàn bộ log ➔</a>
+    </div>
+
+    <% if (recentActivities.length === 0) { %>
+      <p style="color: var(--text-muted); text-align: center; padding: 2rem;">Chưa có hoạt động nào.</p>
+    <% } else { %>
+      <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+        <% recentActivities.forEach(act => { %>
+          <div style="border-left: 3px solid var(--primary); padding-left: 0.85rem; font-size: 0.9rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem;">
+              <span style="font-weight: 700; color: var(--text-main);">
+                <%= act.username %>
+              </span>
+              <span style="font-size: 0.75rem; color: var(--text-muted);">
+                <%= new Date(act.created_at).toLocaleTimeString('vi-VN') %>
+              </span>
+            </div>
+            <div style="color: var(--primary); font-weight: 600; font-size: 0.8rem;">
+              <%= act.action %>
+            </div>
+            <div style="color: var(--text-secondary); font-size: 0.85rem;">
+              <%= act.details %>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

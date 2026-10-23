@@ -1,0 +1,29 @@
+# Git ignore file cho dự án Quiz System
+.env
+.env.local
+.env.*.local
+
+# Chứng chỉ SSL và khóa riêng tư (Tự sinh bằng gen-cert.sh / gen-cert.ps1)
+nginx/certs/*.key
+nginx/certs/*.pem
+nginx/certs/*.crt
+nginx/certs/*.csr
+
+# Node.js dependencies
+node_modules/
+app/node_modules/
+npm-debug.log*
+
+# Dữ liệu runtime / Volumes
+db_data/
+prometheus_data/
+grafana_data/
+loki_data/
+
+# OS and IDE files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+

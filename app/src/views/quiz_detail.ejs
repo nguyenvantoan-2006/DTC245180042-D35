@@ -1,0 +1,80 @@
+<%- include('partials/header') %>
+
+<!-- Thanh điều khiển và thông tin bài thi (Sticky Topbar) -->
+<div class="quiz-topbar">
+  <div>
+    <h1 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.35rem; letter-spacing: -0.01em;">
+      <%= quiz.title %>
+    </h1>
+    <p style="font-size: 0.9rem; color: #cbd5e1; display: flex; align-items: center; gap: 0.75rem;">
+      <span>👤 Thí sinh: <strong><%= user.username %></strong></span>
+      <span>•</span>
+      <span id="answered-count-text">Đang làm bài...</span>
+    </p>
+  </div>
+
+  <div class="timer-box">
+    <div class="timer-label">Thời gian còn lại</div>
+    <div id="quiz-timer" class="timer-text" data-duration="<%= quiz.duration_min %>">--:--</div>
+  </div>
+</div>
+
+<!-- Thanh tiến độ bài làm -->
+<div class="quiz-progress-bar-container">
+  <div id="quiz-progress-bar" class="quiz-progress-bar"></div>
+</div>
+
+<!-- Form nộp bài thi -->
+<form id="quiz-form" action="/quizzes/<%= quiz.id %>/submit" method="POST">
+  <% questions.forEach((question, index) => { %>
+    <div class="question-block" id="q-block-<%= question.id %>">
+      <div class="question-title">
+        <span class="question-badge">Câu <%= index + 1 %></span>
+        <span><%= question.content %></span>
+      </div>
+
+      <div class="options-list">
+        <% question.options.forEach((opt, optIndex) => { %>
+          <label class="option-item" for="opt_<%= opt.id %>">
+            <input type="radio" id="opt_<%= opt.id %>" name="answers[<%= question.id %>]" value="<%= opt.id %>">
+            <span class="option-text">
+              <strong><%= String.fromCharCode(65 + optIndex) %>.</strong> <%= opt.content %>
+            </span>
+          </label>
+        <% }) %>
+      </div>
+    </div>
+  <% }) %>
+
+  <!-- Nút mở Modal Nộp bài -->
+  <div style="text-align: right; margin: 2.5rem 0 3rem;">
+    <button type="button" id="btn-open-submit-modal" class="btn btn-primary btn-lg" style="box-shadow: 0 4px 15px rgba(79, 70, 229, 0.4);">
+      Nộp bài thi ngay ➔
+    </button>
+  </div>
+</form>
+
+<!-- Modal Xác nhận Nộp bài Trực quan (Không dùng popup native) -->
+<div id="submit-confirm-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-icon">📝</div>
+    <h3 class="modal-title">Xác nhận nộp bài thi?</h3>
+    <p id="modal-summary-text" class="modal-desc"></p>
+    
+    <div id="modal-warning-badge" style="display: none; background: #fffbeb; color: #b45309; border: 1px solid #fde68a; padding: 0.65rem; border-radius: 8px; font-size: 0.9rem; font-weight: 600; margin-bottom: 1.5rem;">
+    </div>
+
+    <div class="modal-actions">
+      <button type="button" id="btn-cancel-modal" class="btn btn-outline" style="min-width: 130px;">
+        Kiểm tra lại
+      </button>
+      <button type="button" id="btn-confirm-submit" class="btn btn-primary" style="min-width: 140px;">
+        Đồng ý nộp bài ✔
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/timer.js"></script>
+
+<%- include('partials/footer') %>

@@ -1,0 +1,94 @@
+<%- include('partials/header') %>
+
+<div style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+  <div>
+    <h1 class="page-title">Chi tiết bài làm: <%= attempt.quiz_title %></h1>
+    <p class="page-subtitle">
+      Thí sinh: <strong><%= attempt.username %></strong> | Nộp lúc: <%= new Date(attempt.submitted_at).toLocaleString('vi-VN') %>
+    </p>
+  </div>
+  <div style="display: flex; gap: 0.75rem;">
+    <a href="/history" class="btn btn-outline btn-sm">⬅ Về Lịch sử bài thi</a>
+    <a href="/quizzes/<%= attempt.quiz_id %>" class="btn btn-primary btn-sm">🔄 Thi lại đề này</a>
+  </div>
+</div>
+
+<!-- Thẻ thống kê điểm nhanh -->
+<div class="card" style="padding: 1.25rem 1.75rem; background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); margin-bottom: 2rem;">
+  <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Điểm số đạt được</span>
+      <div style="font-size: 2rem; font-weight: 900; color: <%= attempt.score >= 5 ? 'var(--success)' : 'var(--danger)' %>;">
+        <%= attempt.score %> <span style="font-size: 1.1rem; color: var(--text-muted); font-weight: 600;">/ 10 điểm</span>
+      </div>
+    </div>
+    <div>
+      <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Số câu trả lời đúng</span>
+      <div style="font-size: 1.5rem; font-weight: 800; color: var(--text-main);">
+        <%= correctCount %> / <%= questions.length %> câu
+      </div>
+    </div>
+    <div>
+      <span class="score-badge <%= attempt.score >= 8.5 ? 'excellent' : (attempt.score >= 7.0 ? 'good' : (attempt.score >= 5.0 ? 'average' : 'bad')) %>" style="font-size: 1rem; padding: 0.4rem 1rem;">
+        <%= attempt.score >= 8.5 ? 'Xuất sắc' : (attempt.score >= 7.0 ? 'Khá giỏi' : (attempt.score >= 5.0 ? 'Đạt yêu cầu' : 'Chưa đạt')) %>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- Danh sách chi tiết từng câu hỏi -->
+<h3 style="font-size: 1.2rem; font-weight: 800; margin-bottom: 1.25rem;">Đối soát từng câu hỏi:</h3>
+
+<% questions.forEach((q, idx) => { %>
+  <div class="review-item <%= q.isCorrect ? 'correct' : 'incorrect' %>">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem;">
+      <div style="font-size: 1.05rem; font-weight: 700;">
+        <span class="question-badge" style="background: <%= q.isCorrect ? '#dcfce7' : '#fee2e2' %>; color: <%= q.isCorrect ? '#15803d' : '#b91c1c' %>;">
+          Câu <%= idx + 1 %>
+        </span>
+        <%= q.content %>
+      </div>
+      <div>
+        <% if (q.isCorrect) { %>
+          <span style="background: #dcfce7; color: #166534; font-size: 0.85rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 9999px;">
+            ✔ Chính xác (+<%= (10 / questions.length).toFixed(1) %> đ)
+          </span>
+        <% } else { %>
+          <span style="background: #fee2e2; color: #991b1b; font-size: 0.85rem; font-weight: 700; padding: 0.25rem 0.65rem; border-radius: 9999px;">
+            ✖ Sai (0 đ)
+          </span>
+        <% } %>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+      <% q.options.forEach((opt, oIdx) => { 
+        const isUserChoice = (opt.id === q.selectedOptionId);
+        const isCorrectKey = opt.is_correct;
+      %>
+        <div class="review-option <%= (isUserChoice && isCorrectKey) ? 'user-correct' : (isUserChoice && !isCorrectKey ? 'user-wrong' : (isCorrectKey ? 'is-key' : '')) %>">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span>
+              <strong><%= String.fromCharCode(65 + oIdx) %>.</strong> <%= opt.content %>
+            </span>
+            <span>
+              <% if (isUserChoice && isCorrectKey) { %>
+                <strong style="color: #166534;">✔ Lựa chọn của bạn (Đúng)</strong>
+              <% } else if (isUserChoice && !isCorrectKey) { %>
+                <strong style="color: #991b1b;">✖ Lựa chọn của bạn (Sai)</strong>
+              <% } else if (isCorrectKey) { %>
+                <strong style="color: #15803d;">✔ Đáp án chính xác</strong>
+              <% } %>
+            </span>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  </div>
+<% }) %>
+
+<div style="text-align: center; margin: 2.5rem 0;">
+  <a href="/history" class="btn btn-outline" style="min-width: 150px;">Quay lại Lịch sử</a>
+</div>
+
+<%- include('partials/footer') %>

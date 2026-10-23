@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'Hệ thống Quiz' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <a href="/" class="brand">
+      <div class="brand-icon">📝</div>
+      <span>Hệ Thống Quiz Online</span>
+    </a>
+    <ul class="nav-links">
+      <% if (currentUser) { %>
+        <% if (currentUser.role === 'admin' || currentUser.role === 'teacher') { %>
+          <li><a href="/admin/dashboard">📊 Tổng quan</a></li>
+          <li><a href="/admin/quizzes">📚 Quản lý Đề thi</a></li>
+          <li><a href="/admin/attempts">📝 Lịch sử nộp bài</a></li>
+          <% if (currentUser.role === 'admin') { %>
+            <li><a href="/admin/users">👥 Người dùng</a></li>
+          <% } %>
+          <li><a href="/admin/activity">📋 Nhật ký hoạt động</a></li>
+          <li><a href="/quizzes" style="border: 1px dashed rgba(255,255,255,0.3);">👁️ Giao diện Thi</a></li>
+        <% } else { %>
+          <li><a href="/quizzes">📚 Danh sách Đề thi</a></li>
+          <li><a href="/history">🕒 Lịch sử bài thi</a></li>
+        <% } %>
+        <li class="user-badge">
+          <span>Xin chào, <strong><%= currentUser.username %></strong></span>
+          <span class="role-tag <%= currentUser.role %>">
+            <%= currentUser.role === 'admin' ? 'Admin' : (currentUser.role === 'teacher' ? 'Giáo viên' : 'Học sinh') %>
+          </span>
+        </li>
+        <li><a href="/logout" class="btn btn-outline btn-sm" style="background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2);">Đăng xuất</a></li>
+      <% } else { %>
+        <li><a href="/login">Đăng nhập</a></li>
+        <li><a href="/register">Đăng ký</a></li>
+      <% } %>
+    </ul>
+  </nav>
+  <main class="container">

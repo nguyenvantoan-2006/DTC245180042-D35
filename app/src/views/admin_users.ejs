@@ -1,0 +1,372 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">👥 Quản lý người dùng & Phân quyền</h1>
+    <p class="page-subtitle">Phê duyệt tài khoản đăng ký, quản trị vai trò bảo mật và phân quyền truy cập hệ thống</p>
+  </div>
+  <a href="/admin/dashboard" class="btn btn-outline">⬅ Về Dashboard</a>
+</div>
+
+<!-- Banner hiển thị Mật khẩu vừa tạo / vừa đổi mật khẩu cho Admin xem -->
+<% if (typeof createdUser !== 'undefined' && createdUser) { %>
+  <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #10b981; border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1.75rem; box-shadow: var(--shadow-md);">
+    <div style="display: flex; align-items: flex-start; gap: 1rem;">
+      <div style="font-size: 2.25rem;">🔑</div>
+      <div style="flex: 1;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: #065f46; margin-bottom: 0.35rem;">
+          <%= createdUser.isReset ? 'Đã đổi mật khẩu thành công!' : 'Tài khoản mới đã được tạo thành công!' %>
+        </h3>
+        <p style="color: #047857; font-size: 0.95rem; margin-bottom: 1rem;">
+          Dưới đây là thông tin đăng nhập của người dùng. Hãy sao chép ngay để gửi cho người dùng vì mật khẩu đã được băm mã hóa một chiều (Bcrypt) trong cơ sở dữ liệu:
+        </p>
+
+        <div style="background: #ffffff; border: 1.5px solid #a7f3d0; border-radius: 8px; padding: 1rem 1.25rem; display: flex; gap: 2rem; align-items: center; flex-wrap: wrap;">
+          <div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Tên đăng nhập:</span>
+            <div style="font-size: 1.15rem; font-weight: 800; color: var(--text-main); font-family: monospace;">
+              <%= createdUser.username %>
+            </div>
+          </div>
+
+          <div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Mật khẩu khởi tạo:</span>
+            <div style="font-size: 1.25rem; font-weight: 900; color: #b91c1c; font-family: monospace; background: #fee2e2; padding: 0.2rem 0.6rem; border-radius: 6px; display: inline-block;">
+              <%= createdUser.password %>
+            </div>
+          </div>
+
+          <div>
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Vai trò:</span>
+            <div>
+              <span class="role-tag <%= createdUser.role %>"><%= createdUser.role %></span>
+            </div>
+          </div>
+
+          <div style="margin-left: auto;">
+            <button type="button" id="btn-copy-cred" class="btn btn-success btn-sm" style="font-weight: 700;">
+              📋 Sao chép mật khẩu
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('btn-copy-cred')?.addEventListener('click', function() {
+      navigator.clipboard.writeText('<%= createdUser.password %>').then(() => {
+        this.textContent = '✔ Đã sao chép!';
+        setTimeout(() => { this.textContent = '📋 Sao chép mật khẩu'; }, 2000);
+      });
+    });
+  </script>
+<% } %>
+
+<% if (typeof success !== 'undefined' && success && (!createdUser || createdUser.isReset)) { %>
+  <div class="alert alert-success">✔ <%= success %></div>
+<% } %>
+
+<% if (typeof error !== 'undefined' && error) { %>
+  <div class="alert alert-danger">❌ <%= error %></div>
+<% } %>
+
+<!-- Khu vực tài khoản CHỜ PHÊ DUYỆT (Nếu có) -->
+<% const pendingUsers = users.filter(u => u.status === 'pending'); %>
+<% if (pendingUsers.length > 0) { %>
+  <div class="card" style="border: 2px solid #f59e0b; background: #fffbeb; margin-bottom: 2rem; box-shadow: var(--shadow-md);">
+    <div class="card-header" style="background: #fef3c7; border-bottom: 1px solid #fde68a;">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <h2 class="card-title" style="color: #92400e; font-size: 1.15rem; display: flex; align-items: center; gap: 0.5rem; margin: 0;">
+          <span>⏳</span> Yêu cầu đăng ký chờ xét duyệt (<%= pendingUsers.length %> tài khoản)
+        </h2>
+        <span style="font-size: 0.85rem; font-weight: 600; color: #b45309; background: #fde68a; padding: 0.2rem 0.6rem; border-radius: 999px;">
+          Cần xử lý
+        </span>
+      </div>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table" style="background: transparent;">
+        <thead>
+          <tr style="border-bottom: 1.5px solid #fde68a;">
+            <th style="width: 60px;">ID</th>
+            <th>Tên đăng nhập</th>
+            <th>Vai trò yêu cầu</th>
+            <th>Thời gian đăng ký</th>
+            <th style="text-align: right;">Hành động duyệt</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% pendingUsers.forEach(pu => { %>
+            <tr style="border-bottom: 1px solid #fef3c7;">
+              <td><strong>#<%= pu.id %></strong></td>
+              <td>
+                <span style="font-weight: 700; font-size: 1rem; color: #1e293b;"><%= pu.username %></span>
+              </td>
+              <td>
+                <span class="role-tag <%= pu.role %>">
+                  <%= pu.role === 'teacher' ? '👨‍🏫 Giáo viên' : '🎓 Sinh viên' %>
+                </span>
+              </td>
+              <td style="font-size: 0.88rem; color: #64748b;">
+                <%= new Date(pu.created_at).toLocaleString('vi-VN') %>
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <form action="/admin/users/<%= pu.id %>/approve" method="POST" style="display: inline-block; margin-right: 0.35rem;">
+                  <button type="submit" class="btn btn-success btn-sm" style="font-weight: 700;" onclick="return confirm('Bạn có chắc muốn PHÊ DUYỆT tài khoản <%= pu.username %>?');">
+                    ✔ Phê duyệt
+                  </button>
+                </form>
+                <form action="/admin/users/<%= pu.id %>/reject" method="POST" style="display: inline-block;">
+                  <button type="submit" class="btn btn-danger btn-sm" style="font-weight: 600;" onclick="return confirm('Bạn có chắc muốn TỪ CHỐI tài khoản <%= pu.username %>?');">
+                    ✖ Từ chối
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% } %>
+
+<div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1.5rem;">
+  <!-- Cột trái: Bảng danh sách tài khoản -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h2 class="card-title" style="font-size: 1.15rem;">Toàn bộ tài khoản hệ thống (<%= users.length %> người dùng)</h2>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 50px;">ID</th>
+            <th>Tên đăng nhập</th>
+            <th>Vai trò</th>
+            <th>Trạng thái</th>
+            <th>Ngày tạo</th>
+            <th style="text-align: right;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach(u => { %>
+            <tr>
+              <td>#<%= u.id %></td>
+              <td><strong><%= u.username %></strong></td>
+              <td>
+                <span class="role-tag <%= u.role %>">
+                  <%= u.role === 'admin' ? 'Admin' : (u.role === 'teacher' ? 'Giáo viên' : 'Học sinh') %>
+                </span>
+              </td>
+              <td>
+                <% if (u.status === 'active' || !u.status) { %>
+                  <span class="status-badge active">● Đã kích hoạt</span>
+                <% } else if (u.status === 'pending') { %>
+                  <span class="status-badge pending">⏳ Chờ duyệt</span>
+                <% } else if (u.status === 'rejected') { %>
+                  <span class="status-badge rejected">✖ Đã từ chối</span>
+                <% } %>
+              </td>
+              <td style="font-size: 0.85rem; color: var(--text-muted);">
+                <%= new Date(u.created_at).toLocaleDateString('vi-VN') %>
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <% if (u.status === 'pending') { %>
+                  <form action="/admin/users/<%= u.id %>/approve" method="POST" style="display: inline-block; margin-right: 0.25rem;">
+                    <button type="submit" class="btn btn-success btn-sm" title="Phê duyệt kích hoạt">
+                      ✔ Duyệt
+                    </button>
+                  </form>
+                <% } %>
+
+                <!-- Nút đổi mật khẩu nhanh -->
+                <button type="button" class="btn btn-outline btn-sm btn-open-reset" data-userid="<%= u.id %>" data-username="<%= u.username %>" style="margin-right: 0.35rem;">
+                  🔑 Đổi MK
+                </button>
+
+                <% if (u.id !== currentUser.id) { %>
+                  <form action="/admin/users/<%= u.id %>/delete" method="POST" style="display: inline-block;">
+                    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa tài khoản này khỏi cơ sở dữ liệu?');">
+                      🗑 Xóa
+                    </button>
+                  </form>
+                <% } else { %>
+                  <span style="font-size: 0.8rem; color: var(--text-muted); font-style: italic;">(Đang dùng)</span>
+                <% } %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Cột phải: Form tạo tài khoản mới -->
+  <div class="card" style="margin-bottom: 0;">
+    <div class="card-header">
+      <h2 class="card-title" style="font-size: 1.15rem;">+ Thêm tài khoản nội bộ</h2>
+    </div>
+
+    <form action="/admin/users/new" method="POST">
+      <div class="form-group">
+        <label for="new_username" class="form-label">Tên đăng nhập (Username)</label>
+        <input type="text" id="new_username" name="username" class="form-control" placeholder="vd: giaovien2" required>
+      </div>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+          <label for="new_password" class="form-label" style="margin-bottom: 0;">Mật khẩu khởi tạo</label>
+          <button type="button" id="btn-generate-password" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: underline;">
+            ⚡ Sinh MK ngẫu nhiên
+          </button>
+        </div>
+
+        <div class="password-input-wrapper">
+          <input type="password" id="new_password" name="password" class="form-control" placeholder="Tối thiểu 6 ký tự..." required autocomplete="new-password">
+          <button type="button" id="btn-toggle-new-password" class="btn-toggle-password" title="Hiển thị mật khẩu" aria-label="Hiển thị mật khẩu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="new_role" class="form-label">Vai trò tài khoản</label>
+        <select id="new_role" name="role" class="form-control" required>
+          <option value="student">🎓 Thí sinh / Học sinh (Student)</option>
+          <option value="teacher">👨‍🏫 Giáo viên ra đề (Teacher)</option>
+          <option value="admin">👑 Quản trị viên hệ thống (Admin)</option>
+        </select>
+        <small style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.35rem; display: block;">
+          * Tài khoản do Admin tạo trực tiếp sẽ được kích hoạt ngay lập tức (không cần duyệt).
+        </small>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block" style="padding: 0.75rem; font-weight: 700;">
+        + Tạo và kích hoạt tài khoản
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Đổi Mật Khẩu Nhanh cho User -->
+<div id="reset-password-modal" class="modal-overlay">
+  <div class="modal-content" style="max-width: 440px; text-align: left;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+      <h3 class="modal-title" style="margin-bottom: 0; font-size: 1.25rem;">🔑 Đổi mật khẩu người dùng</h3>
+      <button type="button" id="btn-close-reset-modal" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted);">&times;</button>
+    </div>
+
+    <form id="form-reset-password" action="" method="POST">
+      <p style="margin-bottom: 1.25rem; font-size: 0.95rem; color: var(--text-secondary);">
+        Đang đổi mật khẩu cho tài khoản: <strong id="reset-username-label" style="color: var(--primary);"></strong>
+      </p>
+
+      <div class="form-group">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.45rem;">
+          <label for="reset_password_input" class="form-label" style="margin-bottom: 0;">Mật khẩu mới</label>
+          <button type="button" id="btn-generate-reset-password" style="background: none; border: none; color: var(--primary); font-size: 0.8rem; font-weight: 700; cursor: pointer; text-decoration: underline;">
+            ⚡ Sinh MK ngẫu nhiên
+          </button>
+        </div>
+
+        <div class="password-input-wrapper">
+          <input type="password" id="reset_password_input" name="newPassword" class="form-control" placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)..." required>
+          <button type="button" id="btn-toggle-reset-password" class="btn-toggle-password" title="Hiển thị mật khẩu" aria-label="Hiển thị mật khẩu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+          </button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.75rem;">
+        <button type="button" id="btn-cancel-reset" class="btn btn-outline">Hủy bỏ</button>
+        <button type="submit" class="btn btn-primary" style="font-weight: 700;">Cập nhật mật khẩu ➔</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  const svgEye = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+  const svgEyeOff = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
+
+  // Helper sinh mật khẩu ngẫu nhiên chuẩn bảo mật
+  function generatePassword() {
+    const chars = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+    let pass = 'Pass@2026!';
+    for (let i = 0; i < 4; i++) {
+      pass += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return pass;
+  }
+
+  // Helper gắn sự kiện toggle password SVG
+  function setupSvgToggle(btnId, inputId) {
+    const btn = document.getElementById(btnId);
+    const input = document.getElementById(inputId);
+    if (btn && input) {
+      btn.addEventListener('click', function() {
+        const isPass = input.type === 'password';
+        input.type = isPass ? 'text' : 'password';
+        btn.innerHTML = isPass ? svgEyeOff : svgEye;
+        btn.title = isPass ? 'Ẩn mật khẩu' : 'Hiển thị mật khẩu';
+      });
+    }
+  }
+
+  setupSvgToggle('btn-toggle-new-password', 'new_password');
+  setupSvgToggle('btn-toggle-reset-password', 'reset_password_input');
+
+  // Nút sinh mật khẩu ngẫu nhiên form tạo mới
+  const newPassInput = document.getElementById('new_password');
+  const toggleNewBtn = document.getElementById('btn-toggle-new-password');
+  document.getElementById('btn-generate-password')?.addEventListener('click', function() {
+    const pass = generatePassword();
+    newPassInput.value = pass;
+    newPassInput.type = 'text';
+    if (toggleNewBtn) {
+      toggleNewBtn.innerHTML = svgEyeOff;
+      toggleNewBtn.title = 'Ẩn mật khẩu';
+    }
+  });
+
+  // Modal đổi mật khẩu
+  const resetModal = document.getElementById('reset-password-modal');
+  const resetForm = document.getElementById('form-reset-password');
+  const resetUserLabel = document.getElementById('reset-username-label');
+  const resetPassInput = document.getElementById('reset_password_input');
+  const toggleResetBtn = document.getElementById('btn-toggle-reset-password');
+
+  document.querySelectorAll('.btn-open-reset').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const uid = this.getAttribute('data-userid');
+      const uname = this.getAttribute('data-username');
+      resetForm.action = `/admin/users/${uid}/reset-password`;
+      resetUserLabel.textContent = uname;
+      resetPassInput.value = '';
+      resetPassInput.type = 'password';
+      if (toggleResetBtn) {
+        toggleResetBtn.innerHTML = svgEye;
+        toggleResetBtn.title = 'Hiển thị mật khẩu';
+      }
+      resetModal.classList.add('active');
+    });
+  });
+
+  document.getElementById('btn-close-reset-modal')?.addEventListener('click', () => resetModal.classList.remove('active'));
+  document.getElementById('btn-cancel-reset')?.addEventListener('click', () => resetModal.classList.remove('active'));
+
+  document.getElementById('btn-generate-reset-password')?.addEventListener('click', function() {
+    const pass = generatePassword();
+    resetPassInput.value = pass;
+    resetPassInput.type = 'text';
+    if (toggleResetBtn) {
+      toggleResetBtn.innerHTML = svgEyeOff;
+      toggleResetBtn.title = 'Ẩn mật khẩu';
+    }
+  });
+</script>
+
+<%- include('partials/footer') %>

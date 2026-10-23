@@ -1,0 +1,92 @@
+<%- include('partials/header') %>
+
+<div style="margin-bottom: 1.5rem;">
+  <a href="/admin/quizzes" class="btn btn-outline btn-sm">⬅ Quay lại danh sách đề thi</a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h2 class="card-title">Quản lý câu hỏi: <%= quiz.title %></h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem;">Thời lượng: <%= quiz.duration_min %> phút | Hiện có: <%= questions.length %> câu hỏi</p>
+    </div>
+  </div>
+
+  <% if (success) { %>
+    <div class="alert alert-success"><%= success %></div>
+  <% } %>
+
+  <% if (error) { %>
+    <div class="alert alert-danger"><%= error %></div>
+  <% } %>
+
+  <!-- Danh sách các câu hỏi hiện có -->
+  <h3 style="margin-bottom: 1rem; font-size: 1.15rem;">Danh sách câu hỏi hiện tại:</h3>
+
+  <% if (questions.length === 0) { %>
+    <p style="color: var(--text-muted); padding: 1rem 0;">Đề thi này chưa có câu hỏi nào. Hãy thêm câu hỏi mới bên dưới!</p>
+  <% } else { %>
+    <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+      <% questions.forEach((q, idx) => { %>
+        <div style="border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; background: #fafafa;">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <strong style="font-size: 1.05rem;">Câu <%= idx + 1 %>: <%= q.content %></strong>
+            <form action="/admin/questions/<%= q.id %>/delete" method="POST" onsubmit="return confirm('Bạn có chắc muốn xóa câu hỏi này?');">
+              <input type="hidden" name="quiz_id" value="<%= quiz.id %>">
+              <button type="submit" class="btn btn-danger btn-sm">Xóa câu</button>
+            </form>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.5rem;">
+            <% q.options.forEach((opt, oIdx) => { %>
+              <div style="padding: 0.5rem 0.75rem; border-radius: 6px; font-size: 0.9rem; border: 1px solid <%= opt.is_correct ? 'var(--success)' : 'var(--border)' %>; background: <%= opt.is_correct ? 'var(--success-bg)' : '#ffffff' %>;">
+                <span><%= String.fromCharCode(65 + oIdx) %>. <%= opt.content %></span>
+                <% if (opt.is_correct) { %>
+                  <strong style="color: var(--success); margin-left: 0.5rem;">✔ (Đáp án đúng)</strong>
+                <% } %>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } %>
+
+  <!-- Form thêm câu hỏi mới -->
+  <div style="background: #f1f5f9; padding: 1.5rem; border-radius: 8px; border: 1px solid var(--border);">
+    <h3 style="margin-bottom: 1rem; font-size: 1.15rem;">+ Thêm câu hỏi và 4 lựa chọn đáp án</h3>
+    <form action="/admin/quizzes/<%= quiz.id %>/questions/add" method="POST">
+      <div class="form-group">
+        <label for="content" class="form-label">Nội dung câu hỏi</label>
+        <textarea id="content" name="content" class="form-control" rows="2" placeholder="Nhập câu hỏi tại đây..." required></textarea>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <label class="form-label">4 Đáp án lựa chọn (Tích chọn 1 đáp án chính xác):</label>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <input type="radio" name="correct_option" value="1" required style="width: 1.25rem; height: 1.25rem;">
+          <input type="text" name="option1" class="form-control" placeholder="Đáp án A..." required>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <input type="radio" name="correct_option" value="2" required style="width: 1.25rem; height: 1.25rem;">
+          <input type="text" name="option2" class="form-control" placeholder="Đáp án B..." required>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <input type="radio" name="correct_option" value="3" required style="width: 1.25rem; height: 1.25rem;">
+          <input type="text" name="option3" class="form-control" placeholder="Đáp án C..." required>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <input type="radio" name="correct_option" value="4" required style="width: 1.25rem; height: 1.25rem;">
+          <input type="text" name="option4" class="form-control" placeholder="Đáp án D..." required>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary">+ Lưu câu hỏi vào đề thi</button>
+    </form>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

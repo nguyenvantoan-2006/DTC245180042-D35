@@ -1,0 +1,52 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">📚 Danh sách đề thi trắc nghiệm</h1>
+    <p class="page-subtitle">Chọn đề thi để kiểm tra kiến thức của bạn. Hệ thống sẽ tự động tính thời gian và chấm điểm.</p>
+  </div>
+  <% if (currentUser && (currentUser.role === 'admin' || currentUser.role === 'teacher')) { %>
+    <a href="/admin/quizzes/new" class="btn btn-primary">+ Soạn đề thi mới</a>
+  <% } %>
+</div>
+
+<% if (quizzes.length === 0) { %>
+  <div class="card" style="text-align: center; padding: 3rem 1rem;">
+    <div style="font-size: 3rem; margin-bottom: 0.5rem;">📂</div>
+    <h3 style="font-size: 1.25rem; font-weight: 700;">Hiện chưa có bài thi nào</h3>
+    <p style="color: var(--text-muted);">Vui lòng quay lại sau hoặc liên hệ Giáo viên/Quản trị viên để tạo bài thi.</p>
+  </div>
+<% } else { %>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+    <% quizzes.forEach(quiz => { %>
+      <div class="card" style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between; border-radius: var(--radius); border-top: 4px solid var(--primary);">
+        <div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem;">
+            <span style="font-size: 0.8rem; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 0.2rem 0.6rem; border-radius: 9999px;">
+              Đề thi #<%= quiz.id %>
+            </span>
+            <span style="font-size: 0.85rem; font-weight: 600; color: var(--text-muted); display: flex; align-items: center; gap: 0.25rem;">
+              ⏱ <%= quiz.duration_min %> phút
+            </span>
+          </div>
+
+          <h3 style="font-size: 1.2rem; font-weight: 800; color: var(--text-main); line-height: 1.4; margin-bottom: 0.75rem;">
+            <%= quiz.title %>
+          </h3>
+
+          <div style="display: flex; gap: 1rem; color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            <span>❓ Số lượng: <strong><%= quiz.question_count %> câu</strong></span>
+          </div>
+        </div>
+
+        <div>
+          <a href="/quizzes/<%= quiz.id %>" class="btn btn-primary btn-block" style="padding: 0.75rem 1rem; font-weight: 700;">
+            Vào làm bài ngay ➔
+          </a>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

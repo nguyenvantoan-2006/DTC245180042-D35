@@ -1,0 +1,23 @@
+{
+  "name": "quiz-system-app",
+  "version": "1.0.0",
+  "description": "Hệ thống trắc nghiệm trực tuyến - Môn TKHT (Đề 35)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "ejs": "^3.1.10",
+    "express": "^4.19.2",
+    "express-session": "^1.18.0",
+    "express-validator": "^7.1.0",
+    "mysql2": "^3.9.7",
+    "pino": "^9.0.0",
+    "pino-http": "^9.0.0",
+    "prom-client": "^15.1.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

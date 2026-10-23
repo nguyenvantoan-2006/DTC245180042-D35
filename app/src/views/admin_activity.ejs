@@ -1,0 +1,71 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">📋 Nhật ký hoạt động hệ thống (Audit Logs)</h1>
+    <p class="page-subtitle">Ghi nhận toàn bộ thao tác, sự kiện đăng nhập, tạo đề và nộp bài theo thời gian thực</p>
+  </div>
+  <a href="/admin/dashboard" class="btn btn-outline">⬅ Về Dashboard</a>
+</div>
+
+<!-- Bộ lọc hành động -->
+<div class="card" style="padding: 1rem 1.5rem; margin-bottom: 1.5rem;">
+  <form action="/admin/activity" method="GET" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+    <span style="font-weight: 600; font-size: 0.9rem; color: var(--text-secondary);">Lọc theo loại hành động:</span>
+    <a href="/admin/activity" class="btn <%= !actionFilter ? 'btn-primary' : 'btn-outline' %> btn-sm">Tất cả</a>
+    <a href="/admin/activity?action=ĐĂNG NHẬP" class="btn <%= actionFilter === 'ĐĂNG NHẬP' ? 'btn-primary' : 'btn-outline' %> btn-sm">Đăng nhập</a>
+    <a href="/admin/activity?action=NỘP BÀI THI" class="btn <%= actionFilter === 'NỘP BÀI THI' ? 'btn-primary' : 'btn-outline' %> btn-sm">Nộp bài thi</a>
+    <a href="/admin/activity?action=TẠO ĐỀ THI" class="btn <%= actionFilter === 'TẠO ĐỀ THI' ? 'btn-primary' : 'btn-outline' %> btn-sm">Tạo đề thi</a>
+  </form>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title" style="font-size: 1.15rem;">Toàn bộ nhật ký hoạt động (<%= activities.length %> sự kiện)</h2>
+  </div>
+
+  <% if (activities.length === 0) { %>
+    <p style="color: var(--text-muted); text-align: center; padding: 2.5rem;">Chưa có hoạt động nào được ghi nhận.</p>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 170px;">Thời gian</th>
+            <th>Người thực hiện</th>
+            <th>Hành động</th>
+            <th>Chi tiết thao tác</th>
+            <th>Địa chỉ IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% activities.forEach(act => { %>
+            <tr>
+              <td style="color: var(--text-muted); font-size: 0.85rem; white-space: nowrap;">
+                <%= new Date(act.created_at).toLocaleString('vi-VN') %>
+              </td>
+              <td>
+                <span class="user-badge" style="background: #e2e8f0; color: #1e293b; font-weight: 700;">
+                  <%= act.username %>
+                </span>
+              </td>
+              <td>
+                <span style="font-size: 0.8rem; font-weight: 700; padding: 0.2rem 0.6rem; border-radius: 9999px; background: var(--primary-light); color: var(--primary);">
+                  <%= act.action %>
+                </span>
+              </td>
+              <td>
+                <%= act.details %>
+              </td>
+              <td style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted);">
+                <%= act.ip_address || '127.0.0.1' %>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

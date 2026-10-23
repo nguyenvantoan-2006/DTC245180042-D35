@@ -1,0 +1,115 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1 class="page-title">📝 Quản lý kết quả thi & Lịch sử nộp bài</h1>
+    <p class="page-subtitle">Theo dõi toàn bộ bài làm của thí sinh, đối soát điểm số và quản lý lượt thi</p>
+  </div>
+  <a href="/admin/dashboard" class="btn btn-outline">⬅ Về Dashboard</a>
+</div>
+
+<!-- Bộ lọc tìm kiếm -->
+<div class="card" style="padding: 1.25rem 1.75rem; margin-bottom: 1.5rem;">
+  <form action="/admin/attempts" method="GET" style="display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 200px;">
+      <label class="form-label" style="margin-bottom: 0.35rem;">Tìm theo tên thí sinh:</label>
+      <input type="text" name="search" class="form-control" placeholder="Nhập username học sinh..." value="<%= search || '' %>">
+    </div>
+
+    <div style="flex: 1; min-width: 200px;">
+      <label class="form-label" style="margin-bottom: 0.35rem;">Lọc theo đề thi:</label>
+      <select name="quiz_id" class="form-control">
+        <option value="">-- Tất cả đề thi --</option>
+        <% quizzes.forEach(q => { %>
+          <option value="<%= q.id %>" <%= selectedQuizId == q.id ? 'selected' : '' %>>
+            <%= q.title %>
+          </option>
+        <% }) %>
+      </select>
+    </div>
+
+    <div>
+      <button type="submit" class="btn btn-primary" style="padding: 0.7rem 1.5rem;">
+        🔍 Lọc kết quả
+      </button>
+      <a href="/admin/attempts" class="btn btn-outline" style="padding: 0.7rem 1rem;">
+        Đặt lại
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- Bảng danh sách kết quả -->
+<div class="card">
+  <div class="card-header">
+    <h2 class="card-title" style="font-size: 1.15rem;">Danh sách kết quả nộp bài (<%= attempts.length %> lượt thi)</h2>
+  </div>
+
+  <% if (attempts.length === 0) { %>
+    <p style="color: var(--text-muted); text-align: center; padding: 2.5rem;">
+      Không tìm thấy kết quả nộp bài nào phù hợp với điều kiện lọc.
+    </p>
+  <% } else { %>
+    <div class="table-responsive">
+      <table class="table">
+        <thead>
+          <tr>
+            <th style="width: 60px;">Mã</th>
+            <th>Thí sinh</th>
+            <th>Tên đề thi</th>
+            <th>Điểm số</th>
+            <th>Đánh giá</th>
+            <th>Thời gian nộp</th>
+            <th style="text-align: right;">Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% attempts.forEach(att => { %>
+            <tr>
+              <td><strong>#<%= att.id %></strong></td>
+              <td>
+                <span class="user-badge" style="background: #e2e8f0; color: #1e293b; font-weight: 700;">
+                  👤 <%= att.username %>
+                </span>
+              </td>
+              <td>
+                <strong><%= att.quiz_title %></strong>
+              </td>
+              <td>
+                <span class="score-badge <%= att.score >= 8.5 ? 'excellent' : (att.score >= 7.0 ? 'good' : (att.score >= 5.0 ? 'average' : 'bad')) %>">
+                  <%= att.score %> / 10
+                </span>
+              </td>
+              <td>
+                <% if (att.score >= 8.5) { %>
+                  <span style="color: #166534; font-weight: 700;">Xuất sắc</span>
+                <% } else if (att.score >= 7.0) { %>
+                  <span style="color: #0369a1; font-weight: 700;">Khá giỏi</span>
+                <% } else if (att.score >= 5.0) { %>
+                  <span style="color: #b45309; font-weight: 600;">Đạt</span>
+                <% } else { %>
+                  <span style="color: #b91c1c; font-weight: 600;">Chưa đạt</span>
+                <% } %>
+              </td>
+              <td style="color: var(--text-muted); font-size: 0.85rem;">
+                <%= new Date(att.submitted_at).toLocaleString('vi-VN') %>
+              </td>
+              <td style="text-align: right; white-space: nowrap;">
+                <a href="/quizzes/attempts/<%= att.id %>/review" class="btn btn-primary btn-sm" style="margin-right: 0.35rem;">
+                  🔍 Xem bài làm
+                </a>
+                <form action="/admin/attempts/<%= att.id %>/delete" method="POST" style="display: inline-block;">
+                  <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc muốn xóa lượt thi này để học sinh thi lại?');">
+                    🗑 Xóa
+                  </button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>
